@@ -1,11 +1,13 @@
 name: "Publish MKP builder"
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - 'main'
     paths:
       - 'mkp_builder/**'
+      - '.github/workflows/publish_mkp_builder.yml'
 
 jobs:
   publish-mkp-builder:
