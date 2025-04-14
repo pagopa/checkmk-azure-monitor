@@ -1,0 +1,69 @@
+name: Release
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'CODEOWNERS'
+      - '**.md'
+      - '.**'
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-24.04
+
+    permissions:
+      contents: write
+      issues: write
+      packages: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Release
+        id: release
+        uses: cycjimmy/semantic-release-action@b1b432f13acb7768e0c8efdec416d363a57546f2 # v4.1.1
+        with:
+          semantic_version: 24.2.0
+          extra_plugins: |
+            @semantic-release/release-notes-generator@14.0.1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+        # the manifest has an hardcoded version, we don't really want
+        # to update it every time we commit...
+      - name: Substitute version in manifest
+        env:
+          RELEASE_VERSION: ${{ steps.release.outputs.new_release_version }}
+        run: |
+          sed -e "s/\'version\'\:[[:blank:]]\'.*\'/\'version\': \'$RELEASE_VERSION\'/g" azuremonitor.manifest
+
+      - name: Build MKP
+        if: steps.release.outputs.new_release_published == 'true'
+        run: |
+          mkdir -p .packages
+          docker run \
+            --rm \
+            -v $(pwd)/azuremonitor:/opt/omd/sites/cmk/local/lib/python3/cmk_addons/plugins/azuremonitor \
+            -v $(pwd)/azuremonitor.manifest:/manifests/azuremonitor.manifest \
+            -v $(pwd)/.packages/:/omd/sites/cmk/var/check_mk/packages_local/ \
+            ghcr.io/pagopa/chekmk-mkp:latest \
+            package /manifests/azuremonitor.manifest
+
+      - name: Publish MKP in releases
+        if: steps.release.outputs.new_release_published == 'true'
+        env:
+          RELEASE_TAG: ${{ steps.release.outputs.new_release_git_tag }}
+          RELEASE_VERSION: ${{ steps.release.outputs.new_release_version }}
+        run: |
+          gh release upload "$RELEASE_TAG .packages/azuremonitor-$RELEASE_VERSION.mkp
+
