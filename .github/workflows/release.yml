@@ -45,25 +45,28 @@ jobs:
         env:
           RELEASE_VERSION: ${{ steps.release.outputs.new_release_version }}
         run: |
-          sed -e "s/\'version\'\:[[:blank:]]\'.*\'/\'version\': \'$RELEASE_VERSION\'/g" azuremonitor.manifest
+          sed -i -e "s/'version':\s'.*'/'version': '$RELEASE_VERSION'/g" azuremonitor.manifest
 
       - name: Build MKP
         if: steps.release.outputs.new_release_published == 'true'
         run: |
           mkdir -p .packages
+          chmod -R 0777 .
           docker run \
             --rm \
             -v $(pwd)/azuremonitor:/opt/omd/sites/cmk/local/lib/python3/cmk_addons/plugins/azuremonitor \
             -v $(pwd)/azuremonitor.manifest:/manifests/azuremonitor.manifest \
             -v $(pwd)/.packages/:/omd/sites/cmk/var/check_mk/packages_local/ \
-            ghcr.io/pagopa/chekmk-mkp:latest \
+            ghcr.io/pagopa/checkmk-mkp:latest \
             package /manifests/azuremonitor.manifest
+          sudo chmod -R 0777 .packages
 
       - name: Publish MKP in releases
         if: steps.release.outputs.new_release_published == 'true'
         env:
           RELEASE_TAG: ${{ steps.release.outputs.new_release_git_tag }}
           RELEASE_VERSION: ${{ steps.release.outputs.new_release_version }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          gh release upload "$RELEASE_TAG .packages/azuremonitor-$RELEASE_VERSION.mkp
+          gh release upload "$RELEASE_TAG" ".packages/azuremonitor-$RELEASE_VERSION.mkp"
 
