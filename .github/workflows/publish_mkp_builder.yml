@@ -41,6 +41,6 @@ jobs:
           cache-to: type=gha,mode=max
           # this is a simple tool that really does not not need proper versioning
           tags: |
-            ghcr.io/checkmk-mkp:latest
+            ghcr.io/pagopa/checkmk-mkp:latest
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
