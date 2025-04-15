@@ -114,6 +114,19 @@ def _formspec():
                     ),
                 ),
             ),
+            "proxy":
+            DictElement(
+                required=False,
+                parameter_form=String(
+                    title=Title("Proxy"),
+                    help_text=Help(
+                        "Proxy to the Azure Monitor requests, "
+                        "in the form http(s)://my.proxy:8080 or, "
+                        "with authentication, "
+                        "http(s)://user:pwd@my.proxy:8080"
+                    ),
+                ),
+            ),
         })
 
 

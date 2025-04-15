@@ -27,6 +27,9 @@ def _agent_arguments(params, host_config):
     if params.get('count_warn', None):
         args.append("--count-warn")
         args.append(str(params['count_warn']))
+    if params.get('proxy', None):
+        args.append("--proxy")
+        args.append(str(params['proxy']))
 
     # WARNING: MultilineText (--query arg) causes bugs and pains.
     # Here's what I have learned:

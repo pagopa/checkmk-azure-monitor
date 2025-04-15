@@ -83,6 +83,13 @@ parser.add_argument(
     default=1,
     help='Number of log records found that should issue a critical alert',
 )
+parser.add_argument(
+    '--proxy',
+    required=False,
+    type=str,
+    default=None,
+    help='Proxy to the Azure Monitor requests, for example https://my.proxy:8080',
+)
 args = parser.parse_args()
 
 tenant_id = args.tenant_id
@@ -94,6 +101,7 @@ kusto_query = args.query.replace('___cmk_azuremonitor_newline___', '\n')
 timespan = timedelta(seconds=int(args.timedelta_seconds))
 count_warn = args.count_warn
 count_crit = args.count_crit
+proxy = args.proxy
 
 #
 # login and execute log analytics workspace query
@@ -104,7 +112,11 @@ credential = ClientSecretCredential(
     client_id=client_id,
     client_secret=client_secret,
 )
-client = LogsQueryClient(credential)
+proxies = {
+    'http': proxy,
+    'https': proxy,
+} if proxy else None
+client = LogsQueryClient(credential, proxies=proxies)
 response = client.query_resource(resource_id, kusto_query, timespan=timespan)
 
 if response.status != LogsQueryStatus.SUCCESS:
